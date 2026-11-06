@@ -2,3 +2,6 @@ bench
 extensions
 test
 .github
+flake.nix
+flake.lock
+nix

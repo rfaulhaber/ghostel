@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- A Nix flake.  Its overlay adds `ghostel` to every Emacs package set, with the native module built from source by Nix, so nothing is downloaded at runtime.
+
 ### Fixed
 - evil-ghostel: `i` or `a` with point inside the prompt on the cursor's
   row left the caret in the prompt until the next keystroke, and made

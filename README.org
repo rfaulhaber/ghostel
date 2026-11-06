@@ -213,6 +213,66 @@ need *exactly* [[https://ziglang.org/][Zig]] 0.17.0 - older or newer Zig version
 
 Then =M-x ghostel= to open a terminal.
 
+** Nix
+
+The repository is a Nix flake.  Its package builds the native module from source with Nix and bundles it, so nothing is downloaded at runtime.
+
+| Output                             | Description                                                                          |
+|------------------------------------+--------------------------------------------------------------------------------------|
+| =overlays.default=                 | Adds =ghostel= to every Emacs package set (=emacsPackagesFor=, =emacsWithPackages=, …) |
+| =packages.<system>.ghostel=        | Ghostel built against the flake's pinned nixpkgs and its default Emacs               |
+| =packages.<system>.ghostel-module= | Only the native module                                                               |
+
+Prefer the overlay: Emacs Lisp packages are compiled against a specific Emacs, so Ghostel should come from the same nixpkgs and Emacs variant as the rest of your configuration.  Your nixpkgs needs to provide Zig 0.17 (=zig_0_17=); nixos-unstable does.
+
+#+begin_src nix
+{
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    ghostel = {
+      url = "github:dakra/ghostel";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+  };
+}
+#+end_src
+
+Then, in a NixOS or nix-darwin configuration:
+
+#+begin_src nix
+{ pkgs, inputs, ... }:
+{
+  nixpkgs.overlays = [ inputs.ghostel.overlays.default ];
+
+  environment.systemPackages = [
+    ((pkgs.emacsPackagesFor pkgs.emacs30-pgtk).emacsWithPackages (epkgs: [ epkgs.ghostel ]))
+  ];
+}
+#+end_src
+
+or with home-manager:
+
+#+begin_src nix
+{ pkgs, inputs, ... }:
+{
+  nixpkgs.overlays = [ inputs.ghostel.overlays.default ];
+
+  programs.emacs = {
+    enable = true;
+    package = pkgs.emacs30-pgtk;
+    extraPackages = epkgs: [ epkgs.ghostel ];
+  };
+}
+#+end_src
+
+When combining it with [[https://github.com/nix-community/emacs-overlay][emacs-overlay]], list Ghostel's overlay after it.  The overlay survives consumers that rebuild the Emacs package set, such as [[https://github.com/marienz/nix-doom-emacs-unstraightened][nix-doom-emacs-unstraightened]], so they keep this Ghostel rather than falling back to the one in nixpkgs.  The rebuild does revert /replacements/ of existing Emacs packages made by earlier overlays through plain =overrideScope=; list such overlays after Ghostel's.
+
+To try it without installing anything:
+
+#+begin_src sh
+nix build github:dakra/ghostel
+#+end_src
+
 ** Native module
 :properties:
 :custom_id: native-module
